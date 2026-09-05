@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bingo Server - Admin Panel</title>
+  <!-- Google Fonts: Inter & Outfit -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Font Awesome CDN Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+  <div id="app">
+    <!-- Login Screen Overlay -->
+    <div id="loginScreen" class="auth-overlay">
+      <div class="auth-card glass-panel">
+        <div class="auth-header">
+          <div class="brand-logo">
+            <i class="fa-solid fa-gamepad logo-icon"></i>
+            <span class="brand-name">BINGO<span>ADMIN</span></span>
+          </div>
+          <h2>Admin Authentication</h2>
+          <p>Enter your administrator credentials to access system controls</p>
+        </div>
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="adminEmail"><i class="fa-solid fa-envelope"></i> Admin Email</label>
+            <input type="email" id="adminEmail" placeholder="admin@admin" required autocomplete="email">
+          </div>
+          <div class="form-group">
+            <label for="adminPassword"><i class="fa-solid fa-lock"></i> Password</label>
+            <div class="input-with-icon">
+              <input type="password" id="adminPassword" placeholder="••••••••" required autocomplete="current-password">
+              <button type="button" id="togglePasswordBtn" class="icon-btn"><i class="fa-solid fa-eye"></i></button>
+            </div>
+          </div>
+          <div id="loginError" class="alert alert-danger hidden">
+            <i class="fa-solid fa-triangle-exclamation"></i> <span id="loginErrorText">Invalid credentials</span>
+          </div>
+          <button type="submit" class="btn btn-primary btn-block">
+            <i class="fa-solid fa-right-to-bracket"></i> Sign In to Dashboard
+          </button>
+        </form>
+        <div class="auth-footer">
+          <small><i class="fa-solid fa-shield-halved"></i> Protected by JWT Bearer Authentication</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Admin Dashboard UI -->
+    <div id="mainContent" class="admin-wrapper hidden">
+      <!-- Sidebar Navigation -->
+      <aside class="sidebar glass-sidebar">
+        <div class="sidebar-brand">
+          <i class="fa-solid fa-gamepad logo-icon"></i>
+          <span class="brand-text">BINGO <span>SERVER</span></span>
+        </div>
+        
+        <div class="server-badge" id="serverBadge">
+          <span class="pulse-dot green"></span>
+          <span class="badge-text" id="statusBadgeText">Checking Server...</span>
+        </div>
+
+        <nav class="sidebar-nav">
+          <button class="nav-item active" data-tab="dashboard">
+            <i class="fa-solid fa-chart-pie"></i>
+            <span>Dashboard Overview</span>
+          </button>
+          <button class="nav-item" data-tab="users">
+            <i class="fa-solid fa-users"></i>
+            <span>User Control & Rewards</span>
+          </button>
+          <button class="nav-item" data-tab="challenges">
+            <i class="fa-solid fa-trophy"></i>
+            <span>Challenges Management</span>
+          </button>
+          <button class="nav-item" data-tab="options">
+            <i class="fa-solid fa-sliders"></i>
+            <span>Server Options & Tools</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="user-info">
+            <div class="user-avatar" id="adminAvatar">A</div>
+            <div class="user-details">
+              <span class="user-role">Administrator</span>
+              <span class="user-email" id="adminEmailDisplay">admin@admin</span>
+            </div>
+          </div>
+          <button id="logoutBtn" class="btn btn-outline-danger btn-sm" title="Log Out">
+            <i class="fa-solid fa-power-off"></i>
+          </button>
+        </div>
+      </aside>
+
+      <!-- Main Workspace -->
+      <main class="content-area">
+        <!-- Top Bar -->
+        <header class="topbar glass-header">
+          <div class="page-title-box">
+            <h1 id="pageTitle">Dashboard Overview</h1>
+            <p id="pageSubTitle">Real-time system telemetry and summary</p>
+          </div>
+
+          <div class="topbar-actions">
+            <div class="live-clock" id="liveClock">--:--:--</div>
+            <button id="globalRefreshBtn" class="btn btn-outline" title="Refresh All Data">
+              <i class="fa-solid fa-rotate-right"></i> Refresh Data
+            </button>
+          </div>
+        </header>
+
+        <!-- Dynamic Content Body -->
+        <div class="content-body">
+          <!-- TAB 1: DASHBOARD OVERVIEW -->
+          <section id="dashboardTab" class="tab-pane active">
+            <!-- Metric Cards Grid -->
+            <div class="metrics-grid">
+              <div class="metric-card glass-card">
+                <div class="metric-icon purple"><i class="fa-solid fa-users-line"></i></div>
+                <div class="metric-info">
+                  <span class="metric-label">Total Users</span>
+                  <h3 class="metric-value" id="statTotalUsers">--</h3>
+                  <span class="metric-sub">Registered game accounts</span>
+                </div>
+              </div>
+
+              <div class="metric-card glass-card">
+                <div class="metric-icon cyan"><i class="fa-solid fa-user-plus"></i></div>
+                <div class="metric-info">
+                  <span class="metric-label">New Users Today</span>
+                  <h3 class="metric-value" id="statTodayUsers">--</h3>
+                  <span class="metric-sub">Joined in last 24 hours</span>
+                </div>
+              </div>
+
+              <div class="metric-card glass-card">
+                <div class="metric-icon amber"><i class="fa-solid fa-trophy"></i></div>
+                <div class="metric-info">
+                  <span class="metric-label">Game Challenges</span>
+                  <h3 class="metric-value" id="statTotalChallenges">--</h3>
+                  <span class="metric-sub">Active game room challenges</span>
+                </div>
+              </div>
+
+              <div class="metric-card glass-card">
+                <div class="metric-icon green"><i class="fa-solid fa-database"></i></div>
+                <div class="metric-info">
+                  <span class="metric-label">Database Connection</span>
+                  <h3 class="metric-value badge-style" id="statDbStatus">
+                    <span class="status-indicator">--</span>
+                  </h3>
+                  <span class="metric-sub" id="statDbSub">MongoDB Mongoose Engine</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Control Grid -->
+            <div class="dashboard-grid">
+              <div class="panel glass-panel">
+                <div class="panel-header">
+                  <h3><i class="fa-solid fa-bolt"></i> Quick Actions & Admin Controls</h3>
+                </div>
+                <div class="panel-body grid-2">
+                  <button id="quickAddUserBtn" class="action-card">
+                    <div class="action-icon blue"><i class="fa-solid fa-user-plus"></i></div>
+                    <div class="action-text">
+                      <h4>Add New User</h4>
+                      <p>Create profile with coins & gems</p>
+                    </div>
+                  </button>
+
+                  <button id="quickCreateChallengeBtn" class="action-card">
+                    <div class="action-icon amber"><i class="fa-solid fa-trophy"></i></div>
+                    <div class="action-text">
+                      <h4>Create Challenge</h4>
+                      <p>New gradient room challenge</p>
+                    </div>
+                  </button>
+
+                  <button id="quickCheckHealthBtn" class="action-card">
+                    <div class="action-icon green"><i class="fa-solid fa-heart-pulse"></i></div>
+                    <div class="action-text">
+                      <h4>Check Server Health</h4>
+                      <p>Query <code>/api/health</code> endpoint</p>
+                    </div>
+                  </button>
+
+                  <button id="exportCsvBtn" class="action-card">
+                    <div class="action-icon purple"><i class="fa-solid fa-file-csv"></i></div>
+                    <div class="action-text">
+                      <h4>Export Users CSV</h4>
+                      <p>Download user list spreadsheet</p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              <div class="panel glass-panel">
+                <div class="panel-header">
+                  <h3><i class="fa-solid fa-server"></i> System Telemetry Snapshot</h3>
+                </div>
+                <div class="panel-body">
+                  <div class="info-list">
+                    <div class="info-item">
+                      <span class="info-label">Service Name:</span>
+                      <span class="info-value highlight">bingo-user-server</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">Node Runtime:</span>
+                      <span class="info-value" id="dashNodeVer">--</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">OS Platform:</span>
+                      <span class="info-value" id="dashPlatform">--</span>
+                    </div>
+                    <div class="info-item">
+                      <span class="info-label">JWT Authentication:</span>
+                      <span class="info-value badge-pill green" id="dashJwtState">Configured</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- MongoDB Live Database Telemetry Hub -->
+            <div class="panel glass-panel full-width mt-3">
+              <div class="panel-header flex-between">
+                <h3>
+                  <i class="fa-solid fa-leaf text-green"></i> MongoDB Live Telemetry & Database Hub
+                  <span id="mongoLiveBadge" class="badge-pill green ml-2">Connected</span>
+                </h3>
+                <div class="mongo-header-stats">
+                  <span class="info-tag" id="mongoPingTag"><i class="fa-solid fa-bolt text-amber"></i> Ping: -- ms</span>
+                  <span class="info-tag" id="mongoDbNameTag"><i class="fa-solid fa-database text-cyan"></i> DB: bingo_game</span>
+                  <button id="refreshMongoBtn" class="btn btn-outline btn-sm" title="Refresh Mongo Stats">
+                    <i class="fa-solid fa-rotate-right"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Connection Disconnected Alert Banner -->
+              <div id="mongoWarningBanner" class="alert alert-danger hidden mt-2 mb-3">
+                <i class="fa-solid fa-triangle-exclamation fa-lg"></i>
+                <strong>MongoDB Connection Offline / Warning:</strong> MongoDB Atlas server is currently disconnected.
+                Database operations require an active MongoDB connection. Ensure your current IP address is whitelisted in MongoDB Atlas Security settings.
+              </div>
+
+              <div class="panel-body">
+                <div class="metrics-grid mb-3">
+                  <div class="metric-card glass-card">
+                    <div class="metric-icon cyan"><i class="fa-solid fa-layer-group"></i></div>
+                    <div class="metric-info">
+                      <span class="metric-label">Collections</span>
+                      <h3 class="metric-value" id="mongoCollectionsCount">--</h3>
+                      <span class="metric-sub">Active DB Collections</span>
+                    </div>
+                  </div>
+
+                  <div class="metric-card glass-card">
+                    <div class="metric-icon purple"><i class="fa-solid fa-file-lines"></i></div>
+                    <div class="metric-info">
+                      <span class="metric-label">Total Documents</span>
+                      <h3 class="metric-value" id="mongoDocumentsCount">--</h3>
+                      <span class="metric-sub">Objects across collections</span>
+                    </div>
+                  </div>
+
+                  <div class="metric-card glass-card">
+                    <div class="metric-icon green"><i class="fa-solid fa-hard-drive"></i></div>
+                    <div class="metric-info">
+                      <span class="metric-label">Data & Storage Size</span>
+                      <h3 class="metric-value text-sm" id="mongoStorageSize">--</h3>
+                      <span class="metric-sub" id="mongoDataSizeSub">Data: --</span>
+                    </div>
+                  </div>
+
+                  <div class="metric-card glass-card">
+                    <div class="metric-icon amber"><i class="fa-solid fa-key"></i></div>
+                    <div class="metric-info">
+                      <span class="metric-label">Indexes</span>
+                      <h3 class="metric-value" id="mongoIndexesCount">--</h3>
+                      <span class="metric-sub" id="mongoIndexSizeSub">Index Size: --</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Collections List Breakdown -->
+                <div class="collections-breakdown-box">
+                  <h4 class="text-sub mb-2"><i class="fa-solid fa-table-list"></i> Database Collections Breakdown:</h4>
+                  <div id="mongoCollectionsList" class="collections-flex">
+                    <span class="text-dim">Loading collections details...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- TAB 2: USER CONTROL & REWARDS -->
+          <section id="usersTab" class="tab-pane">
+            <div class="panel glass-panel">
+              <!-- Toolbar -->
+              <div class="table-toolbar">
+                <div class="toolbar-left">
+                  <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="searchInput" placeholder="Search by name or gmail...">
+                    <button id="clearSearchBtn" class="clear-btn hidden"><i class="fa-solid fa-xmark"></i></button>
+                  </div>
+                  <div class="select-group">
+                    <label for="limitSelect">Show:</label>
+                    <select id="limitSelect" class="form-select">
+                      <option value="10">10</option>
+                      <option value="20" selected>20</option>
+                      <option value="50">50</option>
+                      <option value="100">100</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div class="toolbar-right">
+                  <button id="addNewUserModalBtn" class="btn btn-primary">
+                    <i class="fa-solid fa-user-plus"></i> Add User
+                  </button>
+                  <button id="refreshUsersBtn" class="btn btn-outline" title="Reload User Table">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- User Data Table -->
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th width="50">#</th>
+                      <th>User Profile</th>
+                      <th>Gmail ID</th>
+                      <th>Coins 🟡</th>
+                      <th>Gems 💎</th>
+                      <th>User Object ID</th>
+                      <th>Created Date</th>
+                      <th width="140" class="text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="userTableBody">
+                    <tr>
+                      <td colspan="8" class="text-center py-4">
+                        <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+                        <p class="mt-2">Loading user data...</p>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Pagination Footer -->
+              <div class="table-footer">
+                <div class="pagination-info" id="paginationInfo">Showing 0 of 0 users</div>
+                <div class="pagination-controls" id="paginationControls"></div>
+              </div>
+            </div>
+          </section>
+
+          <!-- TAB 3: CHALLENGES MANAGEMENT -->
+          <section id="challengesTab" class="tab-pane">
+            <div class="panel glass-panel">
+              <div class="table-toolbar">
+                <div class="toolbar-left">
+                  <div class="search-box">
+                    <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                    <input type="text" id="challengeSearchInput" placeholder="Search challenge title...">
+                  </div>
+                </div>
+                <div class="toolbar-right">
+                  <button id="openCreateChallengeModalBtn" class="btn btn-primary">
+                    <i class="fa-solid fa-plus"></i> Create Challenge
+                  </button>
+                  <button id="refreshChallengesBtn" class="btn btn-outline">
+                    <i class="fa-solid fa-arrows-rotate"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Challenges Cards Container Grid -->
+              <div class="challenges-grid" id="challengesGrid">
+                <div class="text-center py-4 full-width">
+                  <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+                  <p class="mt-2 text-sub">Loading game challenges...</p>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- TAB 4: SERVER OPTIONS & TOOLS -->
+          <section id="optionsTab" class="tab-pane">
+            <div class="options-grid">
+              <div class="panel glass-panel">
+                <div class="panel-header">
+                  <h3><i class="fa-solid fa-gears"></i> Server Options & Configuration</h3>
+                </div>
+                <div class="panel-body">
+                  <div class="sys-options-list" id="sysOptionsList">
+                    <div class="text-center py-4"><i class="fa-solid fa-spinner fa-spin"></i> Loading server settings...</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="panel glass-panel">
+                <div class="panel-header">
+                  <h3><i class="fa-solid fa-vial"></i> Endpoint Interactive Diagnostic Tester</h3>
+                </div>
+                <div class="panel-body">
+                  <div class="tester-form">
+                    <div class="form-row">
+                      <div class="form-group flex-1">
+                        <label for="testerEndpoint">Endpoint Path</label>
+                        <select id="testerEndpoint" class="form-select">
+                          <option value="/api/health">GET /api/health (Public Health Check)</option>
+                          <option value="/api/challenges">GET /api/challenges (Active Challenges)</option>
+                          <option value="/api/admin/stats">GET /api/admin/stats (Admin Statistics)</option>
+                          <option value="/api/admin/system">GET /api/admin/system (Server Diagnostics)</option>
+                          <option value="/api/admin/users?page=1&limit=5">GET /api/admin/users (Users List)</option>
+                          <option value="/api/admin/challenges">GET /api/admin/challenges (All Challenges)</option>
+                        </select>
+                      </div>
+                      <button id="runDiagnosticBtn" class="btn btn-primary btn-align">
+                        <i class="fa-solid fa-play"></i> Test Endpoint
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="response-viewer">
+                    <div class="response-header">
+                      <span>HTTP Status: <strong id="resStatusCode">--</strong></span>
+                      <span>Latency: <strong id="resLatency">-- ms</strong></span>
+                    </div>
+                    <pre class="json-code-box" id="resJsonBox">// Click 'Test Endpoint' to view live response output</pre>
+                  </div>
+                </div>
+              </div>
+
+              <div class="panel glass-panel full-width">
+                <div class="panel-header">
+                  <h3><i class="fa-solid fa-network-wired"></i> Registered API Endpoints Registry</h3>
+                </div>
+                <div class="panel-body">
+                  <div class="table-responsive">
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>HTTP Method</th>
+                          <th>Endpoint Path</th>
+                          <th>Authentication Level</th>
+                          <th>Description</th>
+                        </tr>
+                      </thead>
+                      <tbody id="routesTableBody"></tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <!-- MODALS -->
+
+    <!-- Add / Edit User Modal (With Coins & Gems) -->
+    <div id="userModal" class="modal-overlay hidden">
+      <div class="modal-card glass-panel">
+        <div class="modal-header">
+          <h3 id="userModalTitle"><i class="fa-solid fa-user-plus"></i> Add New User</h3>
+          <button class="modal-close" id="closeUserModalBtn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form id="userForm">
+          <input type="hidden" id="editUserId">
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="modalUserName">User Full Name *</label>
+              <input type="text" id="modalUserName" placeholder="e.g. John Doe" required>
+            </div>
+            <div class="form-group">
+              <label for="modalGmailId">Gmail Address (@gmail.com) *</label>
+              <input type="email" id="modalGmailId" placeholder="john.doe@gmail.com" required pattern="^[a-zA-Z0-9._%+-]+@gmail\.com$">
+            </div>
+            
+            <div class="grid-2 mt-2">
+              <div class="form-group">
+                <label for="modalCoins"><i class="fa-solid fa-coins text-amber"></i> Coins (🟡)</label>
+                <input type="number" id="modalCoins" min="0" value="0" placeholder="100">
+              </div>
+              <div class="form-group">
+                <label for="modalGems"><i class="fa-solid fa-gem text-cyan"></i> Gems (💎)</label>
+                <input type="number" id="modalGems" min="0" value="0" placeholder="10">
+              </div>
+            </div>
+
+            <div id="userModalError" class="alert alert-danger hidden"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" id="cancelUserModalBtn">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="saveUserBtn">
+              <i class="fa-solid fa-check"></i> Save User Profile
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Create / Edit Challenge Modal -->
+    <div id="challengeModal" class="modal-overlay hidden">
+      <div class="modal-card glass-panel modal-lg">
+        <div class="modal-header">
+          <h3 id="challengeModalTitle"><i class="fa-solid fa-trophy"></i> Create Game Challenge</h3>
+          <button class="modal-close" id="closeChallengeModalBtn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form id="challengeForm">
+          <input type="hidden" id="editChallengeId">
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="chalTitle">Challenge Title *</label>
+              <input type="text" id="chalTitle" placeholder="e.g. High Stakes Bingo Masters" required>
+            </div>
+
+            <div class="form-group">
+              <label for="chalCoverImage">Cover Image URL</label>
+              <input type="url" id="chalCoverImage" placeholder="https://example.com/cover.png">
+              <small class="text-dim">Leave blank for default styled gradient cover</small>
+            </div>
+
+            <!-- Gradient Colors Section -->
+            <div class="form-group">
+              <label>Gradient Theme Colors (Hex Format) *</label>
+              <div class="gradient-inputs-row">
+                <div class="color-picker-box">
+                  <label for="chalColor1">Color 1:</label>
+                  <input type="color" id="chalColor1Picker" value="#6366f1">
+                  <input type="text" id="chalColor1" value="#6366f1" placeholder="#6366f1" required pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$">
+                </div>
+
+                <div class="color-picker-box">
+                  <label for="chalColor2">Color 2:</label>
+                  <input type="color" id="chalColor2Picker" value="#a855f7">
+                  <input type="text" id="chalColor2" value="#a855f7" placeholder="#a855f7" required pattern="^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$">
+                </div>
+              </div>
+            </div>
+
+            <!-- Live Gradient Preview Box -->
+            <div class="gradient-preview-box" id="gradientPreviewBox">
+              <span id="previewTitleDisplay">Live Gradient Preview</span>
+            </div>
+
+            <div class="grid-2 mt-3">
+              <div class="form-group">
+                <label for="chalEntryCoin"><i class="fa-solid fa-right-to-bracket text-amber"></i> Entry Fee & Currency *</label>
+                <div class="input-with-select">
+                  <input type="number" id="chalEntryCoin" min="0" value="100" required>
+                  <select id="chalEntryType" class="form-select inline-select">
+                    <option value="coins" selected>Coins 🟡</option>
+                    <option value="gems">Gems 💎</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="chalRewardCoin"><i class="fa-solid fa-gift text-green"></i> Reward Prize & Currency *</label>
+                <div class="input-with-select">
+                  <input type="number" id="chalRewardCoin" min="0" value="250" required>
+                  <select id="chalRewardType" class="form-select inline-select">
+                    <option value="coins" selected>Coins 🟡</option>
+                    <option value="gems">Gems 💎</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="grid-2 mt-2">
+              <div class="form-group">
+                <label for="chalMaxPlayers"><i class="fa-solid fa-users text-purple"></i> Max Players *</label>
+                <input type="number" id="chalMaxPlayers" min="2" max="100" value="4" required>
+              </div>
+
+              <div class="form-group">
+                <label for="chalStatus">Status</label>
+                <select id="chalStatus" class="form-select">
+                  <option value="active" selected>Active (Visible in Game)</option>
+                  <option value="inactive">Inactive (Hidden)</option>
+                </select>
+              </div>
+            </div>
+
+            <div id="chalModalError" class="alert alert-danger hidden"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline" id="cancelChallengeModalBtn">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="saveChallengeBtn">
+              <i class="fa-solid fa-check"></i> Save Challenge
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- View User Details JSON Modal -->
+    <div id="viewModal" class="modal-overlay hidden">
+      <div class="modal-card glass-panel">
+        <div class="modal-header">
+          <h3><i class="fa-solid fa-code"></i> User Document JSON</h3>
+          <button class="modal-close" id="closeViewModalBtn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+          <pre id="viewJsonContent" class="json-code-box"></pre>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" id="closeViewModalBtn2">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete User Modal -->
+    <div id="deleteModal" class="modal-overlay hidden">
+      <div class="modal-card glass-panel">
+        <div class="modal-header">
+          <h3 class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i> Confirm Delete User</h3>
+          <button class="modal-close" id="closeDeleteModalBtn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to permanently delete user <strong id="deleteUserName">--</strong> (<span id="deleteUserEmail">--</span>)?</p>
+          <p class="text-sub mt-2">This action cannot be undone in MongoDB.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="cancelDeleteBtn">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+            <i class="fa-solid fa-trash-can"></i> Delete Permanently
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Challenge Modal -->
+    <div id="deleteChallengeModal" class="modal-overlay hidden">
+      <div class="modal-card glass-panel">
+        <div class="modal-header">
+          <h3 class="text-danger"><i class="fa-solid fa-triangle-exclamation"></i> Confirm Delete Challenge</h3>
+          <button class="modal-close" id="closeDeleteChalModalBtn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to delete challenge <strong id="deleteChalTitle">--</strong>?</p>
+          <p class="text-sub mt-2">Game clients will no longer be able to enter this challenge.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline" id="cancelDeleteChalBtn">Cancel</button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteChalBtn">
+            <i class="fa-solid fa-trash-can"></i> Delete Challenge
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
