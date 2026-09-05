@@ -110,6 +110,7 @@
     editUserId: document.getElementById('editUserId'),
     modalUserName: document.getElementById('modalUserName'),
     modalGmailId: document.getElementById('modalGmailId'),
+    modalDeviceId: document.getElementById('modalDeviceId'),
     modalCoins: document.getElementById('modalCoins'),
     modalGems: document.getElementById('modalGems'),
     userModalError: document.getElementById('userModalError'),
@@ -454,7 +455,7 @@
     if (users.length === 0) {
       el.userTableBody.innerHTML = `
         <tr>
-          <td colspan="8" class="text-center py-4">
+          <td colspan="9" class="text-center py-4">
             <i class="fa-solid fa-folder-open fa-2x" style="color: var(--text-dim);"></i>
             <p class="mt-2 text-sub">No user records found.</p>
           </td>
@@ -476,6 +477,9 @@
       const formattedDate = u.createdAt ? new Date(u.createdAt).toLocaleString() : 'N/A';
       const coins = Number(u.coins || 0).toLocaleString();
       const gems = Number(u.gems || 0).toLocaleString();
+      const deviceTag = u.deviceId
+        ? `<span class="id-badge" title="Click to copy Device ID" onclick="navigator.clipboard.writeText('${escapeHtml(u.deviceId)}')"><i class="fa-solid fa-mobile-screen text-cyan"></i> ${escapeHtml(u.deviceId)}</span>`
+        : '<span class="text-dim">N/A</span>';
 
       html += `
         <tr>
@@ -489,6 +493,7 @@
           <td>
             <span class="gmail-tag"><i class="fa-solid fa-envelope"></i> ${escapeHtml(u.gmailId)}</span>
           </td>
+          <td>${deviceTag}</td>
           <td><span class="coin-badge">🟡 ${coins}</span></td>
           <td><span class="gem-badge">💎 ${gems}</span></td>
           <td>
@@ -502,7 +507,7 @@
               <button class="btn-icon" title="View Document JSON" data-action="view" data-id="${u._id}">
                 <i class="fa-solid fa-eye"></i>
               </button>
-              <button class="btn-icon" title="Edit Profile & Currency" data-action="edit" data-id="${u._id}" data-name="${escapeHtml(u.name)}" data-gmail="${escapeHtml(u.gmailId)}" data-coins="${u.coins || 0}" data-gems="${u.gems || 0}">
+              <button class="btn-icon" title="Edit Profile & Currency" data-action="edit" data-id="${u._id}" data-name="${escapeHtml(u.name)}" data-gmail="${escapeHtml(u.gmailId)}" data-device="${escapeHtml(u.deviceId || '')}" data-coins="${u.coins || 0}" data-gems="${u.gems || 0}">
                 <i class="fa-solid fa-pen"></i>
               </button>
               <button class="btn-icon delete" title="Delete User" data-action="delete" data-id="${u._id}" data-name="${escapeHtml(u.name)}" data-gmail="${escapeHtml(u.gmailId)}">
@@ -541,6 +546,7 @@
     el.editUserId.value = '';
     el.modalUserName.value = '';
     el.modalGmailId.value = '';
+    if (el.modalDeviceId) el.modalDeviceId.value = '';
     el.modalCoins.value = '100';
     el.modalGems.value = '10';
     el.userModalTitle.innerHTML = '<i class="fa-solid fa-user-plus"></i> Add New User';
@@ -548,13 +554,14 @@
     el.userModal.classList.remove('hidden');
   }
 
-  function openEditUserModal(id, name, gmail, coins, gems) {
+  function openEditUserModal(id, name, gmail, deviceId, coins, gems) {
     el.editUserId.value = id;
     el.modalUserName.value = name;
     el.modalGmailId.value = gmail;
+    if (el.modalDeviceId) el.modalDeviceId.value = deviceId || '';
     el.modalCoins.value = coins !== undefined ? coins : '0';
     el.modalGems.value = gems !== undefined ? gems : '0';
-    el.userModalTitle.innerHTML = '<i class="fa-solid fa-pen"></i> Edit User Profile & Coins/Gems';
+    el.userModalTitle.innerHTML = '<i class="fa-solid fa-pen"></i> Edit User Profile & Device ID';
     el.userModalError.classList.add('hidden');
     el.userModal.classList.remove('hidden');
   }
@@ -566,6 +573,7 @@
     const id = el.editUserId.value;
     const name = el.modalUserName.value.trim();
     const gmailId = el.modalGmailId.value.trim().toLowerCase();
+    const deviceId = el.modalDeviceId ? el.modalDeviceId.value.trim() : '';
     const coins = Math.max(Number(el.modalCoins.value) || 0, 0);
     const gems = Math.max(Number(el.modalGems.value) || 0, 0);
 
@@ -578,11 +586,12 @@
       return;
     }
 
+    const payload = { name, gmailId, deviceId, coins, gems };
     let res;
     if (id) {
-      res = await apiRequest(`/api/admin/users/${id}`, 'PATCH', { name, gmailId, coins, gems });
+      res = await apiRequest(`/api/admin/users/${id}`, 'PATCH', payload);
     } else {
-      res = await apiRequest('/api/admin/users', 'POST', { name, gmailId, coins, gems });
+      res = await apiRequest('/api/admin/users', 'POST', payload);
     }
 
     if (res.ok) {
@@ -647,15 +656,17 @@
     let mimeType = 'text/csv';
     let filename = `bingo_users_export_${Date.now()}.csv`;
 
-    const headers = ['User ID', 'Name', 'Gmail ID', 'Coins', 'Gems', 'Created At'];
+    const headers = ['User ID', 'Name', 'Gmail ID', 'Device ID', 'Coins', 'Gems', 'Created At'];
     const rows = users.map(u => [
       `"${u._id}"`,
       `"${(u.name || '').replace(/"/g, '""')}"`,
       `"${(u.gmailId || '').replace(/"/g, '""')}"`,
+      `"${(u.deviceId || '').replace(/"/g, '""')}"`,
       u.coins || 0,
       u.gems || 0,
       `"${u.createdAt || ''}"`
     ]);
+    content = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     content = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
 
     const blob = new Blob([content], { type: mimeType });
@@ -1040,9 +1051,10 @@
       const gmail = btn.dataset.gmail;
       const coins = btn.dataset.coins;
       const gems = btn.dataset.gems;
+      const device = btn.dataset.device;
 
       if (action === 'view') openViewJsonModal(id);
-      if (action === 'edit') openEditUserModal(id, name, gmail, coins, gems);
+      if (action === 'edit') openEditUserModal(id, name, gmail, device, coins, gems);
       if (action === 'delete') openDeleteModal(id, name, gmail);
     });
 

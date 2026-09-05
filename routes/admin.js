@@ -194,11 +194,12 @@ router.get('/system', requireAdmin, async (req, res, next) => {
 
 // ==================== USER MANAGEMENT ROUTES ====================
 
-// Admin Create User (with Coins & Gems)
+// Admin Create User (with Coins, Gems & Device ID)
 router.post('/users', requireAdmin, async (req, res, next) => {
   try {
     const name = String(req.body.name || '').trim();
     const gmailId = String(req.body.gmailId || '').trim().toLowerCase();
+    const deviceId = String(req.body.deviceId || '').trim();
     const coins = Math.max(Number(req.body.coins) || 0, 0);
     const gems = Math.max(Number(req.body.gems) || 0, 0);
 
@@ -212,7 +213,7 @@ router.post('/users', requireAdmin, async (req, res, next) => {
       return res.status(409).json({ error: 'User with this Gmail ID already exists' });
     }
 
-    const user = await User.create({ name, gmailId, coins, gems });
+    const user = await User.create({ name, gmailId, deviceId, coins, gems });
     res.status(201).json({ message: 'User created successfully', user });
   } catch (e) {
     if (e.code === 11000) return res.status(409).json({ error: 'Gmail ID already exists' });
@@ -227,7 +228,13 @@ router.get('/users', requireAdmin, async (req, res, next) => {
     const limit = Math.min(Math.max(Number(req.query.limit) || 20, 1), 100);
     const search = String(req.query.search || '').trim();
     const filter = search
-      ? { $or: [{ name: { $regex: search, $options: 'i' } }, { gmailId: { $regex: search, $options: 'i' } }] }
+      ? {
+          $or: [
+            { name: { $regex: search, $options: 'i' } },
+            { gmailId: { $regex: search, $options: 'i' } },
+            { deviceId: { $regex: search, $options: 'i' } }
+          ]
+        }
       : {};
     const [users, total] = await Promise.all([
       User.find(filter).select('-__v').sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit),
@@ -251,7 +258,7 @@ router.get('/users/:id', requireAdmin, async (req, res, next) => {
   }
 });
 
-// Update User (including Coins & Gems)
+// Update User (including Coins, Gems & Device ID)
 router.patch('/users/:id', requireAdmin, async (req, res, next) => {
   try {
     const update = {};
@@ -266,6 +273,9 @@ router.patch('/users/:id', requireAdmin, async (req, res, next) => {
         return res.status(400).json({ error: 'gmailId must be a valid Gmail address' });
       }
       update.gmailId = gmailId;
+    }
+    if (req.body.deviceId !== undefined) {
+      update.deviceId = String(req.body.deviceId).trim();
     }
     if (req.body.coins !== undefined) {
       update.coins = Math.max(Number(req.body.coins) || 0, 0);

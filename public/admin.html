@@ -340,6 +340,7 @@
                       <th width="50">#</th>
                       <th>User Profile</th>
                       <th>Gmail ID</th>
+                      <th>Device ID</th>
                       <th>Coins 🟡</th>
                       <th>Gems 💎</th>
                       <th>User Object ID</th>
@@ -349,7 +350,7 @@
                   </thead>
                   <tbody id="userTableBody">
                     <tr>
-                      <td colspan="8" class="text-center py-4">
+                      <td colspan="9" class="text-center py-4">
                         <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
                         <p class="mt-2">Loading user data...</p>
                       </td>
@@ -472,7 +473,7 @@
 
     <!-- MODALS -->
 
-    <!-- Add / Edit User Modal (With Coins & Gems) -->
+    <!-- Add / Edit User Modal (With Coins, Gems & Device ID) -->
     <div id="userModal" class="modal-overlay hidden">
       <div class="modal-card glass-panel">
         <div class="modal-header">
@@ -489,6 +490,11 @@
             <div class="form-group">
               <label for="modalGmailId">Gmail Address (@gmail.com) *</label>
               <input type="email" id="modalGmailId" placeholder="john.doe@gmail.com" required pattern="^[a-zA-Z0-9._%+-]+@gmail\.com$">
+            </div>
+
+            <div class="form-group">
+              <label for="modalDeviceId"><i class="fa-solid fa-mobile-screen text-cyan"></i> Device ID</label>
+              <input type="text" id="modalDeviceId" placeholder="e.g. device_9876543210abcdef">
             </div>
             
             <div class="grid-2 mt-2">
