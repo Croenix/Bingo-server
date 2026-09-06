@@ -77,6 +77,10 @@
             <i class="fa-solid fa-trophy"></i>
             <span>Challenges Management</span>
           </button>
+          <button class="nav-item" data-tab="rooms">
+            <i class="fa-solid fa-door-open"></i>
+            <span>Rooms & Vivox Tester</span>
+          </button>
           <button class="nav-item" data-tab="options">
             <i class="fa-solid fa-sliders"></i>
             <span>Server Options & Tools</span>
@@ -397,7 +401,158 @@
             </div>
           </section>
 
-          <!-- TAB 4: SERVER OPTIONS & TOOLS -->
+          <!-- TAB 4: MULTIPLAYER ROOMS & VIVOX TESTER -->
+          <section id="roomsTab" class="tab-pane">
+            <div class="metrics-grid mb-3">
+              <div class="metric-card glass-card">
+                <div class="metric-icon cyan"><i class="fa-solid fa-door-open"></i></div>
+                <div class="metric-info">
+                  <span class="metric-label">Active Rooms</span>
+                  <h3 class="metric-value" id="statActiveRooms">0</h3>
+                  <span class="metric-sub">Waiting for players</span>
+                </div>
+              </div>
+
+              <div class="metric-card glass-card">
+                <div class="metric-icon purple"><i class="fa-solid fa-microphone"></i></div>
+                <div class="metric-info">
+                  <span class="metric-label">Vivox Voice Service</span>
+                  <h3 class="metric-value badge-style">
+                    <span class="status-indicator active">Configured</span>
+                  </h3>
+                  <span class="metric-sub">HMAC-SHA256 Token Engine</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="options-grid mb-3">
+              <!-- Create Room Tool -->
+              <div class="panel glass-panel">
+                <div class="panel-header">
+                  <h3><i class="fa-solid fa-plus-circle text-cyan"></i> Create Dynamic Room Test</h3>
+                </div>
+                <div class="panel-body">
+                  <form id="adminCreateRoomForm">
+                    <div class="form-group">
+                      <label for="adminRoomName">Room Name *</label>
+                      <input type="text" id="adminRoomName" value="Admin Test Room" required>
+                    </div>
+
+                    <div class="grid-2">
+                      <div class="form-group">
+                        <label for="adminCreatorId">Creator ID *</label>
+                        <input type="text" id="adminCreatorId" value="admin_creator_1" required>
+                      </div>
+                      <div class="form-group">
+                        <label for="adminCreatorName">Creator Name *</label>
+                        <input type="text" id="adminCreatorName" value="Admin Creator" required>
+                      </div>
+                    </div>
+
+                    <div class="grid-2">
+                      <div class="form-group">
+                        <label for="adminCustomRoomId">Custom Room ID (Optional)</label>
+                        <input type="text" id="adminCustomRoomId" placeholder="e.g. BINGO101">
+                        <small class="text-dim">Leave blank for random code</small>
+                      </div>
+                      <div class="form-group">
+                        <label for="adminRoomCapacity">Max Capacity (2-10)</label>
+                        <input type="number" id="adminRoomCapacity" min="2" max="10" value="4" required>
+                      </div>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="adminRoomPassword">Room Password (Optional)</label>
+                      <input type="text" id="adminRoomPassword" placeholder="Leave empty for public room">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block mt-2">
+                      <i class="fa-solid fa-door-open"></i> Create Room & Generate Token
+                    </button>
+                  </form>
+                </div>
+              </div>
+
+              <!-- Vivox Auth Token Generator Tool -->
+              <div class="panel glass-panel">
+                <div class="panel-header">
+                  <h3><i class="fa-solid fa-key text-amber"></i> Vivox Voice Chat Token Generator</h3>
+                </div>
+                <div class="panel-body">
+                  <form id="adminVivoxTokenForm">
+                    <div class="form-group">
+                      <label for="vivoxTestRoomId">Target Room ID / Channel *</label>
+                      <input type="text" id="vivoxTestRoomId" placeholder="e.g. BINGO101" required>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="vivoxTestUserName">Username *</label>
+                      <input type="text" id="vivoxTestUserName" value="player_tester" required>
+                    </div>
+
+                    <div class="form-group">
+                      <label for="vivoxTestAction">Vivox Action</label>
+                      <select id="vivoxTestAction" class="form-select">
+                        <option value="join" selected>Join Channel (join)</option>
+                        <option value="login">Login (login)</option>
+                      </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-block mt-2">
+                      <i class="fa-solid fa-shield-halved"></i> Generate Vivox Token
+                    </button>
+                  </form>
+
+                  <div class="response-viewer mt-3">
+                    <div class="response-header">
+                      <span>Generated Vivox Token Output</span>
+                      <button type="button" id="copyVivoxTokenBtn" class="btn btn-outline btn-sm"><i class="fa-solid fa-copy"></i> Copy Token</button>
+                    </div>
+                    <pre class="json-code-box" id="vivoxTokenOutputBox">// Click 'Generate Vivox Token' or Create a room to view token details</pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Active Rooms Table -->
+            <div class="panel glass-panel full-width">
+              <div class="panel-header flex-between">
+                <h3><i class="fa-solid fa-list text-purple"></i> Active Multiplayer Rooms in Database</h3>
+                <button id="refreshRoomsBtn" class="btn btn-outline btn-sm">
+                  <i class="fa-solid fa-arrows-rotate"></i> Refresh Rooms
+                </button>
+              </div>
+              <div class="panel-body">
+                <div class="table-responsive">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Room ID</th>
+                        <th>Room Name</th>
+                        <th>Creator</th>
+                        <th>Joined Players List</th>
+                        <th>Capacity</th>
+                        <th>Visibility</th>
+                        <th>Status</th>
+                        <th>Vivox Channel URI</th>
+                        <th width="140" class="text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody id="roomsTableBody">
+                      <tr>
+                        <td colspan="8" class="text-center py-4">
+                          <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+                          <p class="mt-2 text-sub">Loading active rooms...</p>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- TAB 5: SERVER OPTIONS & TOOLS -->
           <section id="optionsTab" class="tab-pane">
             <div class="options-grid">
               <div class="panel glass-panel">
@@ -422,6 +577,7 @@
                         <label for="testerEndpoint">Endpoint Path</label>
                         <select id="testerEndpoint" class="form-select">
                           <option value="/api/health">GET /api/health (Public Health Check)</option>
+                          <option value="/api/rooms">GET /api/rooms (Active Multiplayer Rooms)</option>
                           <option value="/api/challenges">GET /api/challenges (Active Challenges)</option>
                           <option value="/api/admin/stats">GET /api/admin/stats (Admin Statistics)</option>
                           <option value="/api/admin/system">GET /api/admin/system (Server Diagnostics)</option>

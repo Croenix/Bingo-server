@@ -184,7 +184,15 @@ router.get('/system', requireAdmin, async (req, res, next) => {
         { path: '/api/admin/challenges', method: 'POST', auth: 'Admin Bearer', desc: 'Create new challenge' },
         { path: '/api/admin/challenges/:id', method: 'GET', auth: 'Admin Bearer', desc: 'Get challenge details' },
         { path: '/api/admin/challenges/:id', method: 'PATCH', auth: 'Admin Bearer', desc: 'Update challenge' },
-        { path: '/api/admin/challenges/:id', method: 'DELETE', auth: 'Admin Bearer', desc: 'Delete challenge' }
+        { path: '/api/admin/challenges/:id', method: 'DELETE', auth: 'Admin Bearer', desc: 'Delete challenge' },
+        { path: '/api/rooms', method: 'POST', auth: 'Public', desc: 'Create dynamic room with capacity limit & optional password' },
+        { path: '/api/rooms', method: 'GET', auth: 'Public', desc: 'List available active rooms' },
+        { path: '/api/rooms/:roomId', method: 'GET', auth: 'Public', desc: 'Fetch room details & player list' },
+        { path: '/api/rooms/:roomId/join', method: 'POST', auth: 'Public', desc: 'Join room with capacity & password enforcement' },
+        { path: '/api/rooms/:roomId/leave', method: 'POST', auth: 'Public', desc: 'Leave room (auto deletes room from MongoDB if creator exits)' },
+        { path: '/api/rooms/:roomId/vivox-token', method: 'POST', auth: 'Public', desc: 'Generate Vivox voice token' },
+        { path: '/api/rooms/:roomId/end', method: 'POST', auth: 'Public', desc: 'End game and delete room' },
+        { path: '/api/rooms/:roomId', method: 'DELETE', auth: 'Public', desc: 'Remove room permanently from MongoDB' }
       ]
     });
   } catch (e) {

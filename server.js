@@ -1,17 +1,31 @@
 require('dotenv').config();
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 const path = require('path');
+
 const userRoutes = require('./routes/users');
 const adminRoutes = require('./routes/admin');
 const challengeRoutes = require('./routes/challenges');
+const roomRoutes = require('./routes/rooms');
+const registerRoomHandlers = require('./sockets/roomHandler');
 
 const app = express();
-const PORT = Number(process.env.PORT || 3000);
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: process.env.CORS_ORIGIN || '*',
+    methods: ['GET', 'POST', 'PATCH', 'DELETE']
+  }
+});
+
 app.set('trust proxy', 1);
+app.set('io', io);
 
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
@@ -24,13 +38,15 @@ app.get('/api/health', (req, res) =>
   res.json({
     ok: true,
     service: 'bingo-user-server',
-    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+    database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
+    socket: io ? 'initialized' : 'inactive'
   })
 );
 
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/challenges', challengeRoutes);
+app.use('/api/rooms', roomRoutes);
 
 app.get(['/', '/admin'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
@@ -42,10 +58,16 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
 });
 
+// Socket.io Connection listener
+io.on('connection', (socket) => {
+  console.log(`Socket connected: ${socket.id}`);
+  registerRoomHandlers(io, socket);
+});
+
 async function start() {
   if (!process.env.JWT_SECRET) console.warn('Warning: JWT_SECRET is missing in .env');
 
-  app.listen(PORT, () => console.log(`Bingo User Server running on http://localhost:${PORT}`));
+  server.listen(PORT, () => console.log(`Bingo Server running on http://localhost:${PORT}`));
 
   if (!process.env.MONGODB_URI) {
     console.error('MongoDB connection warning: MONGODB_URI is missing in .env');
@@ -59,6 +81,8 @@ async function start() {
     console.error('MongoDB connection failed (Server continues running):', e.message);
   }
 }
+
+const PORT = Number(process.env.PORT || 3000);
 start();
 
-
+module.exports = { app, server, io };

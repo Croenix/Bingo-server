@@ -161,6 +161,24 @@
     cancelDeleteChalBtn: document.getElementById('cancelDeleteChalBtn'),
     confirmDeleteChalBtn: document.getElementById('confirmDeleteChalBtn'),
 
+    // Rooms & Vivox Elements
+    statActiveRooms: document.getElementById('statActiveRooms'),
+    adminCreateRoomForm: document.getElementById('adminCreateRoomForm'),
+    adminRoomName: document.getElementById('adminRoomName'),
+    adminCreatorId: document.getElementById('adminCreatorId'),
+    adminCreatorName: document.getElementById('adminCreatorName'),
+    adminCustomRoomId: document.getElementById('adminCustomRoomId'),
+    adminRoomCapacity: document.getElementById('adminRoomCapacity'),
+    adminRoomPassword: document.getElementById('adminRoomPassword'),
+    adminVivoxTokenForm: document.getElementById('adminVivoxTokenForm'),
+    vivoxTestRoomId: document.getElementById('vivoxTestRoomId'),
+    vivoxTestUserName: document.getElementById('vivoxTestUserName'),
+    vivoxTestAction: document.getElementById('vivoxTestAction'),
+    copyVivoxTokenBtn: document.getElementById('copyVivoxTokenBtn'),
+    vivoxTokenOutputBox: document.getElementById('vivoxTokenOutputBox'),
+    refreshRoomsBtn: document.getElementById('refreshRoomsBtn'),
+    roomsTableBody: document.getElementById('roomsTableBody'),
+
     toastContainer: document.getElementById('toastContainer')
   };
 
@@ -299,6 +317,7 @@
       dashboard: { title: 'Dashboard Overview', sub: 'Real-time telemetry and overall summary' },
       users: { title: 'User Control & Rewards', sub: 'Manage accounts, update coins, gems, and profile details' },
       challenges: { title: 'Challenges Management', sub: 'Create and configure game room challenges' },
+      rooms: { title: 'Multiplayer Rooms & Vivox', sub: 'Create test rooms, manage active games, and generate Vivox tokens' },
       options: { title: 'Server Options & Tools', sub: 'Diagnostic controls, system settings & API tester' }
     };
     const current = titles[tabId] || titles.dashboard;
@@ -308,6 +327,7 @@
     if (tabId === 'dashboard') loadDashboardData();
     if (tabId === 'users') fetchUsers();
     if (tabId === 'challenges') fetchChallenges();
+    if (tabId === 'rooms') fetchRooms();
     if (tabId === 'options') loadServerOptions();
   }
 
@@ -609,7 +629,12 @@
     el.userModalError.classList.remove('hidden');
   }
 
-  async function openViewJsonModal(id) {
+  async function openViewJsonModal(id, directObj) {
+    if (directObj) {
+      el.viewJsonContent.textContent = JSON.stringify(directObj, null, 2);
+      el.viewModal.classList.remove('hidden');
+      return;
+    }
     const { ok, data } = await apiRequest(`/api/admin/users/${id}`);
     if (ok) {
       el.viewJsonContent.textContent = JSON.stringify(data.user, null, 2);
@@ -904,6 +929,162 @@
     }
   }
 
+  // ==================== MULTIPLAYER ROOMS & VIVOX ====================
+
+  async function fetchRooms() {
+    if (!el.roomsTableBody) return;
+    el.roomsTableBody.innerHTML = `
+      <tr>
+        <td colspan="8" class="text-center py-4">
+          <i class="fa-solid fa-spinner fa-spin fa-2x"></i>
+          <p class="mt-2 text-sub">Fetching active rooms...</p>
+        </td>
+      </tr>
+    `;
+
+    const { ok, data } = await apiRequest('/api/rooms');
+    if (!ok) {
+      el.roomsTableBody.innerHTML = `
+        <tr>
+          <td colspan="8" class="text-center py-4 text-danger">
+            <i class="fa-solid fa-circle-exclamation fa-2x"></i>
+            <p class="mt-2">Failed to load active rooms</p>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    const rooms = data.rooms || [];
+    if (el.statActiveRooms) el.statActiveRooms.textContent = rooms.length;
+
+    if (rooms.length === 0) {
+      el.roomsTableBody.innerHTML = `
+        <tr>
+          <td colspan="9" class="text-center py-4 text-sub">
+            <i class="fa-solid fa-door-closed fa-2x mb-2"></i>
+            <p>No active rooms waiting in MongoDB. Create one above to test!</p>
+          </td>
+        </tr>
+      `;
+      return;
+    }
+
+    let html = '';
+    rooms.forEach(r => {
+      const isPublicBadge = r.hasPassword || (r.password && r.password.length > 0)
+        ? '<span class="badge-pill red"><i class="fa-solid fa-lock"></i> Protected</span>'
+        : '<span class="badge-pill green"><i class="fa-solid fa-earth-americas"></i> Public</span>';
+      
+      const statusBadge = `<span class="badge-pill cyan">${r.status || 'waiting'}</span>`;
+      const jsonStr = encodeURIComponent(JSON.stringify(r));
+
+      const playersListHtml = (r.players && r.players.length > 0)
+        ? r.players.map(p => `
+            <span class="badge-pill ${p.isCreator ? 'amber' : 'purple'}" title="User ID: ${escapeHtml(p.userId)}">
+              <i class="fa-solid ${p.isCreator ? 'fa-crown' : 'fa-user'}"></i> ${escapeHtml(p.name)}
+            </span>
+          `).join(' ')
+        : '<span class="text-dim">No players joined</span>';
+
+      html += `
+        <tr>
+          <td><code>${escapeHtml(r.roomId)}</code></td>
+          <td><strong>${escapeHtml(r.name)}</strong></td>
+          <td>${escapeHtml(r.creatorName)} <small class="text-dim">(${escapeHtml(r.creatorId)})</small></td>
+          <td>${playersListHtml}</td>
+          <td><span class="badge-pill purple">${r.players ? r.players.length : 0} / ${r.capacity}</span></td>
+          <td>${isPublicBadge}</td>
+          <td>${statusBadge}</td>
+          <td><small class="text-dim"><code>${escapeHtml(r.vivoxChannelUri || 'N/A')}</code></small></td>
+          <td>
+            <div class="action-btns">
+              <button class="btn-icon" title="View Room Details JSON" data-action="view-room" data-json="${jsonStr}">
+                <i class="fa-solid fa-eye"></i>
+              </button>
+              <button class="btn-icon delete" title="End & Delete Room" data-action="end-room" data-id="${escapeHtml(r.roomId)}">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    });
+
+    el.roomsTableBody.innerHTML = html;
+  }
+
+  async function handleAdminCreateRoom(e) {
+    e.preventDefault();
+    const name = el.adminRoomName.value.trim();
+    const creatorId = el.adminCreatorId.value.trim();
+    const creatorName = el.adminCreatorName.value.trim();
+    const customRoomId = el.adminCustomRoomId.value.trim();
+    const capacity = Number(el.adminRoomCapacity.value) || 4;
+    const password = el.adminRoomPassword.value.trim();
+
+    const payload = {
+      name,
+      creatorId,
+      creatorName,
+      customRoomId,
+      capacity,
+      password
+    };
+
+    const { ok, data } = await apiRequest('/api/rooms', 'POST', payload);
+    if (ok) {
+      showToast(`Room '${data.room.roomId}' created successfully!`, 'success');
+      if (el.vivoxTestRoomId) el.vivoxTestRoomId.value = data.room.roomId;
+      if (el.vivoxTokenOutputBox) el.vivoxTokenOutputBox.textContent = JSON.stringify(data, null, 2);
+      fetchRooms();
+    } else {
+      showToast(data.error || 'Failed to create room', 'error');
+    }
+  }
+
+  async function handleGenerateVivoxToken(e) {
+    e.preventDefault();
+    const roomId = el.vivoxTestRoomId.value.trim();
+    const userName = el.vivoxTestUserName.value.trim();
+    const action = el.vivoxTestAction.value;
+
+    if (!roomId || !userName) {
+      showToast('Room ID and Username are required for Vivox token generation.', 'error');
+      return;
+    }
+
+    const { ok, data } = await apiRequest(`/api/rooms/${roomId}/vivox-token`, 'POST', { userName, action });
+    if (ok) {
+      showToast('Vivox authentication token generated!', 'success');
+      if (el.vivoxTokenOutputBox) el.vivoxTokenOutputBox.textContent = JSON.stringify(data, null, 2);
+    } else {
+      showToast(data.error || 'Failed to generate Vivox token', 'error');
+    }
+  }
+
+  function copyVivoxToken() {
+    if (!el.vivoxTokenOutputBox) return;
+    const text = el.vivoxTokenOutputBox.textContent;
+    if (text && text.trim().length > 0 && !text.startsWith('//')) {
+      navigator.clipboard.writeText(text);
+      showToast('Vivox token payload copied to clipboard!', 'success');
+    } else {
+      showToast('No generated token payload to copy.', 'info');
+    }
+  }
+
+  async function handleEndRoom(roomId) {
+    if (!confirm(`Are you sure you want to remove and delete room '${roomId}' from MongoDB?`)) return;
+    const { ok, data } = await apiRequest(`/api/rooms/${roomId}`, 'DELETE');
+    if (ok) {
+      showToast(`Room '${roomId}' removed permanently from MongoDB.`, 'success');
+      fetchRooms();
+    } else {
+      showToast(data.error || 'Failed to delete room', 'error');
+    }
+  }
+
   // ==================== OPTIONS TAB ====================
 
   async function loadServerOptions() {
@@ -990,6 +1171,7 @@
       loadDashboardData();
       if (state.activeTab === 'users') fetchUsers();
       if (state.activeTab === 'challenges') fetchChallenges();
+      if (state.activeTab === 'rooms') fetchRooms();
       if (state.activeTab === 'options') loadServerOptions();
     });
 
@@ -1135,6 +1317,25 @@
 
     // Options Events
     el.runDiagnosticBtn.addEventListener('click', runDiagnostic);
+
+    // Rooms & Vivox Events
+    if (el.adminCreateRoomForm) el.adminCreateRoomForm.addEventListener('submit', handleAdminCreateRoom);
+    if (el.adminVivoxTokenForm) el.adminVivoxTokenForm.addEventListener('submit', handleGenerateVivoxToken);
+    if (el.copyVivoxTokenBtn) el.copyVivoxTokenBtn.addEventListener('click', copyVivoxToken);
+    if (el.refreshRoomsBtn) el.refreshRoomsBtn.addEventListener('click', fetchRooms);
+
+    if (el.roomsTableBody) {
+      el.roomsTableBody.addEventListener('click', (e) => {
+        const viewBtn = e.target.closest('[data-action="view-room"]');
+        const deleteBtn = e.target.closest('[data-action="end-room"]');
+
+        if (viewBtn) {
+          openViewJsonModal(null, JSON.parse(decodeURIComponent(viewBtn.dataset.json)));
+        } else if (deleteBtn) {
+          handleEndRoom(deleteBtn.dataset.id);
+        }
+      });
+    }
   }
 
   function init() {
