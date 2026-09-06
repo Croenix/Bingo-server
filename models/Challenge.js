@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const challengeSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true, minlength: 1, maxlength: 120 },
+    category: { type: String, trim: true, default: 'Standard', maxlength: 60 },
     coverImage: { type: String, trim: true, default: '' },
     color1: { type: String, trim: true, default: '#6366f1' },
     color2: { type: String, trim: true, default: '#a855f7' },

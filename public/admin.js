@@ -123,6 +123,7 @@
     challengeModalTitle: document.getElementById('challengeModalTitle'),
     editChallengeId: document.getElementById('editChallengeId'),
     chalTitle: document.getElementById('chalTitle'),
+    chalCategory: document.getElementById('chalCategory'),
     chalCoverImage: document.getElementById('chalCoverImage'),
     chalColor1: document.getElementById('chalColor1'),
     chalColor1Picker: document.getElementById('chalColor1Picker'),
@@ -763,6 +764,10 @@
           </div>
           <div class="challenge-body">
             <div class="challenge-meta-row">
+              <span class="meta-label"><i class="fa-solid fa-folder-tree text-amber"></i> Category:</span>
+              <span class="meta-value badge-pill amber">${escapeHtml(c.category || 'Standard')}</span>
+            </div>
+            <div class="challenge-meta-row">
               <span class="meta-label"><i class="fa-solid fa-right-to-bracket text-amber"></i> Entry Fee:</span>
               <span class="meta-value ${c.entryCurrencyType === 'gems' ? 'text-cyan' : 'text-amber'}">${entryIcon} ${c.entryCoin || 0} ${entryLabel}</span>
             </div>
@@ -806,6 +811,7 @@
   function openCreateChallengeModal() {
     el.editChallengeId.value = '';
     el.chalTitle.value = '';
+    if (el.chalCategory) el.chalCategory.value = 'Standard';
     el.chalCoverImage.value = '';
     el.chalColor1.value = '#6366f1';
     el.chalColor1Picker.value = '#6366f1';
@@ -834,6 +840,7 @@
     const c = data.challenge;
     el.editChallengeId.value = c._id;
     el.chalTitle.value = c.title;
+    if (el.chalCategory) el.chalCategory.value = c.category || 'Standard';
     el.chalCoverImage.value = c.coverImage || '';
     el.chalColor1.value = c.color1 || '#6366f1';
     el.chalColor1Picker.value = c.color1 || '#6366f1';
@@ -858,6 +865,7 @@
 
     const id = el.editChallengeId.value;
     const title = el.chalTitle.value.trim();
+    const category = el.chalCategory ? el.chalCategory.value.trim() : 'Standard';
     const coverImage = el.chalCoverImage.value.trim();
     const color1 = el.chalColor1.value.trim();
     const color2 = el.chalColor2.value.trim();
@@ -875,6 +883,7 @@
 
     const body = {
       title,
+      category,
       coverImage,
       color1,
       color2,

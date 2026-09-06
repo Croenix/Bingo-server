@@ -686,9 +686,16 @@
         <form id="challengeForm">
           <input type="hidden" id="editChallengeId">
           <div class="modal-body">
-            <div class="form-group">
-              <label for="chalTitle">Challenge Title *</label>
-              <input type="text" id="chalTitle" placeholder="e.g. High Stakes Bingo Masters" required>
+            <div class="grid-2">
+              <div class="form-group">
+                <label for="chalTitle">Challenge Title *</label>
+                <input type="text" id="chalTitle" placeholder="e.g. High Stakes Bingo Masters" required>
+              </div>
+
+              <div class="form-group">
+                <label for="chalCategory"><i class="fa-solid fa-folder-tree text-amber"></i> Category</label>
+                <input type="text" id="chalCategory" placeholder="e.g. Standard, Tournament, Daily" value="Standard">
+              </div>
             </div>
 
             <div class="form-group">

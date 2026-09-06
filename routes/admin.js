@@ -323,7 +323,14 @@ router.delete('/users/:id', requireAdmin, async (req, res, next) => {
 router.get('/challenges', requireAdmin, async (req, res, next) => {
   try {
     const search = String(req.query.search || '').trim();
-    const filter = search ? { title: { $regex: search, $options: 'i' } } : {};
+    const filter = search
+      ? {
+          $or: [
+            { title: { $regex: search, $options: 'i' } },
+            { category: { $regex: search, $options: 'i' } }
+          ]
+        }
+      : {};
     const challenges = await Challenge.find(filter).sort({ createdAt: -1 });
     res.json({ challenges });
   } catch (e) {
@@ -347,6 +354,7 @@ router.get('/challenges/:id', requireAdmin, async (req, res, next) => {
 router.post('/challenges', requireAdmin, async (req, res, next) => {
   try {
     const title = String(req.body.title || '').trim();
+    const category = String(req.body.category || 'Standard').trim();
     const coverImage = String(req.body.coverImage || '').trim();
     const color1 = String(req.body.color1 || '#6366f1').trim();
     const color2 = String(req.body.color2 || '#a855f7').trim();
@@ -361,6 +369,7 @@ router.post('/challenges', requireAdmin, async (req, res, next) => {
 
     const challenge = await Challenge.create({
       title,
+      category,
       coverImage,
       color1,
       color2,
@@ -387,6 +396,7 @@ router.patch('/challenges/:id', requireAdmin, async (req, res, next) => {
       if (!title) return res.status(400).json({ error: 'title cannot be empty' });
       update.title = title;
     }
+    if (req.body.category !== undefined) update.category = String(req.body.category).trim() || 'Standard';
     if (req.body.coverImage !== undefined) update.coverImage = String(req.body.coverImage).trim();
     if (req.body.color1 !== undefined) update.color1 = String(req.body.color1).trim();
     if (req.body.color2 !== undefined) update.color2 = String(req.body.color2).trim();
