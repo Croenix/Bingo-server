@@ -170,7 +170,10 @@ router.get('/system', requireAdmin, async (req, res, next) => {
       dbState: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
       routes: [
         { path: '/api/health', method: 'GET', auth: 'Public', desc: 'Server & DB Health check' },
-        { path: '/api/users', method: 'POST', auth: 'Public', desc: 'Create or update user' },
+        { path: '/api/users', method: 'POST', auth: 'Public', desc: 'Create or update user profile' },
+        { path: '/api/users/device/:deviceId', method: 'GET', auth: 'Public', desc: 'Search and fetch user by deviceId' },
+        { path: '/api/users/gmail/:gmailId', method: 'GET', auth: 'Public', desc: 'Search and fetch user by gmailId' },
+        { path: '/api/users?deviceId=ID', method: 'GET', auth: 'Public', desc: 'Search user profile by deviceId or gmailId query' },
         { path: '/api/challenges', method: 'GET', auth: 'Public', desc: 'Active challenges for game client' },
         { path: '/api/admin/login', method: 'POST', auth: 'Public', desc: 'Admin login for JWT' },
         { path: '/api/admin/stats', method: 'GET', auth: 'Admin Bearer', desc: 'Overview statistics' },
