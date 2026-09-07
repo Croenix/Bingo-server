@@ -13,6 +13,7 @@ const adminRoutes = require('./routes/admin');
 const challengeRoutes = require('./routes/challenges');
 const roomRoutes = require('./routes/rooms');
 const registerRoomHandlers = require('./sockets/roomHandler');
+const migrateLegacyUsers = require('./utils/migrateUsers');
 
 const app = express();
 const server = http.createServer(app);
@@ -77,6 +78,7 @@ async function start() {
   try {
     await mongoose.connect(process.env.MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
     console.log('MongoDB connected successfully');
+    await migrateLegacyUsers();
   } catch (e) {
     console.error('MongoDB connection failed (Server continues running):', e.message);
   }

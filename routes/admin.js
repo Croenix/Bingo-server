@@ -5,6 +5,8 @@ const mongoose = require('mongoose');
 const User = require('../models/User');
 const Challenge = require('../models/Challenge');
 const { requireAdmin } = require('../middleware/adminAuth');
+const { generateUniqueUserId } = require('../utils/userIdGenerator');
+const { generateDefaultAvatar } = require('../utils/avatarGenerator');
 const router = express.Router();
 
 // Admin Login
@@ -171,9 +173,11 @@ router.get('/system', requireAdmin, async (req, res, next) => {
       routes: [
         { path: '/api/health', method: 'GET', auth: 'Public', desc: 'Server & DB Health check' },
         { path: '/api/users', method: 'POST', auth: 'Public', desc: 'Create or update user profile' },
+        { path: '/api/users/id/:userId', method: 'GET', auth: 'Public', desc: 'Fetch user profile by application userId' },
+        { path: '/api/users/id/:userId', method: 'PATCH', auth: 'Public', desc: 'Update user name & profileImageUrl by application userId' },
         { path: '/api/users/device/:deviceId', method: 'GET', auth: 'Public', desc: 'Search and fetch user by deviceId' },
         { path: '/api/users/gmail/:gmailId', method: 'GET', auth: 'Public', desc: 'Search and fetch user by gmailId' },
-        { path: '/api/users?deviceId=ID', method: 'GET', auth: 'Public', desc: 'Search user profile by deviceId or gmailId query' },
+        { path: '/api/users?userId=ID', method: 'GET', auth: 'Public', desc: 'Search user profile by userId, deviceId or gmailId query' },
         { path: '/api/challenges', method: 'GET', auth: 'Public', desc: 'Active challenges for game client' },
         { path: '/api/admin/login', method: 'POST', auth: 'Public', desc: 'Admin login for JWT' },
         { path: '/api/admin/stats', method: 'GET', auth: 'Admin Bearer', desc: 'Overview statistics' },
@@ -224,7 +228,9 @@ router.post('/users', requireAdmin, async (req, res, next) => {
       return res.status(409).json({ error: 'User with this Gmail ID already exists' });
     }
 
-    const user = await User.create({ name, gmailId, deviceId, coins, gems });
+    const userId = await generateUniqueUserId(User);
+    const profileImageUrl = String(req.body.profileImageUrl || '').trim() || generateDefaultAvatar(userId);
+    const user = await User.create({ userId, name, gmailId, deviceId, profileImageUrl, coins, gems });
     res.status(201).json({ message: 'User created successfully', user });
   } catch (e) {
     if (e.code === 11000) return res.status(409).json({ error: 'Gmail ID already exists' });
@@ -241,6 +247,7 @@ router.get('/users', requireAdmin, async (req, res, next) => {
     const filter = search
       ? {
           $or: [
+            { userId: { $regex: search, $options: 'i' } },
             { name: { $regex: search, $options: 'i' } },
             { gmailId: { $regex: search, $options: 'i' } },
             { deviceId: { $regex: search, $options: 'i' } }
