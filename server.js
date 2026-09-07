@@ -40,7 +40,8 @@ app.get('/api/health', (req, res) =>
     ok: true,
     service: 'bingo-user-server',
     database: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    socket: io ? 'initialized' : 'inactive'
+    socket: io ? 'initialized' : 'inactive',
+    uptime: process.uptime()
   })
 );
 

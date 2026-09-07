@@ -242,14 +242,36 @@ body {
 
 .topbar-actions { display: flex; align-items: center; gap: 1rem; }
 
+.header-time-container {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
 .live-clock {
   font-family: var(--font-mono);
   font-size: 0.85rem;
   background: rgba(255, 255, 255, 0.05);
-  padding: 0.4rem 0.8rem;
+  padding: 0.4rem 0.85rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-color);
   color: var(--accent-cyan);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.server-uptime-tag {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  background: rgba(99, 102, 241, 0.12);
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: #a5b4fc;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .content-body { padding: 2rem; flex: 1; }

@@ -19,7 +19,8 @@
     searchDebounceTimer: null,
     chalSearchDebounceTimer: null,
     deleteTargetId: null,
-    deleteChallengeTargetId: null
+    deleteChallengeTargetId: null,
+    serverStartTime: null
   };
 
   // DOM Elements Selector Cache
@@ -42,6 +43,7 @@
     pageTitle: document.getElementById('pageTitle'),
     pageSubTitle: document.getElementById('pageSubTitle'),
     liveClock: document.getElementById('liveClock'),
+    headerUptimeTag: document.getElementById('headerUptimeTag'),
     globalRefreshBtn: document.getElementById('globalRefreshBtn'),
     
     navItems: document.querySelectorAll('.nav-item'),
@@ -249,11 +251,21 @@
     return { status: res.status, ok: res.ok, data };
   }
 
-  // Live Clock
+  // Live Clock & Server Uptime Counter
   function startClock() {
     const update = () => {
       const now = new Date();
-      if (el.liveClock) el.liveClock.textContent = now.toLocaleTimeString();
+      if (el.liveClock) {
+        el.liveClock.innerHTML = `<i class="fa-regular fa-clock"></i> ${now.toLocaleTimeString()}`;
+      }
+      if (el.headerUptimeTag) {
+        if (state.serverStartTime) {
+          const elapsedSec = Math.max(0, Math.floor((Date.now() - state.serverStartTime) / 1000));
+          el.headerUptimeTag.innerHTML = `<i class="fa-solid fa-bolt"></i> Uptime: ${formatUptime(elapsedSec)}`;
+        } else {
+          el.headerUptimeTag.innerHTML = `<i class="fa-solid fa-bolt"></i> Uptime: --`;
+        }
+      }
     };
     update();
     setInterval(update, 1000);
@@ -384,6 +396,9 @@
   async function loadDashboardData() {
     const health = await apiRequest('/api/health');
     if (health.ok) {
+      if (health.data.uptime) {
+        state.serverStartTime = Date.now() - (health.data.uptime * 1000);
+      }
       if (el.serverBadge) {
         const pulse = el.serverBadge.querySelector('.pulse-dot');
         if (pulse) pulse.className = 'pulse-dot green';
@@ -413,8 +428,9 @@
         const heapUsedMB = Math.round((s.memory.heapUsed || 0) / 1024 / 1024);
         el.statServerMemory.textContent = `${heapUsedMB} MB Heap`;
       }
-      if (s.uptime && el.statServerUptime) {
-        el.statServerUptime.textContent = `Uptime: ${formatUptime(s.uptime)}`;
+      if (s.uptime) {
+        state.serverStartTime = Date.now() - (s.uptime * 1000);
+        if (el.statServerUptime) el.statServerUptime.textContent = `Uptime: ${formatUptime(s.uptime)}`;
       }
     }
 
