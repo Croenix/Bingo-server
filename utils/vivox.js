@@ -13,13 +13,13 @@ function base64url(input) {
 
 /**
  * Returns the formatted Vivox User SIP URI.
- * Format: sip:.{issuer}.{username}.@{domain}
+ * Format: sip:.{issuer}.{userId}.@{domain}
  */
-function getVivoxUserUri(username) {
+function getVivoxUserUri(userId) {
   const issuer = process.env.VIVOX_ISSUER || '20067-bingo-52162';
   const domain = process.env.VIVOX_DOMAIN || 'mtu1xp.vivox.com';
-  const safeUsername = String(username).replace(/[^a-zA-Z0-9_\-\.]/g, '');
-  return `sip:.${issuer}.${safeUsername}.@${domain}`;
+  const safeUserId = String(userId).replace(/[^a-zA-Z0-9_\-\.]/g, '');
+  return `sip:.${issuer}.${safeUserId}.@${domain}`;
 }
 
 /**

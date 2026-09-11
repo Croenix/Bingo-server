@@ -44,9 +44,8 @@ router.post('/token', async (req, res, next) => {
         });
       }
 
-      // Use trusted database user name, fallback to provided userName if present
-      const trustedUserName = user.name || String(userName || '').trim();
-      const vivoxUserUri = getVivoxUserUri(trustedUserName);
+      // Use authoritative userId for Vivox user identity
+      const vivoxUserUri = getVivoxUserUri(user.userId);
 
       let token;
       try {
@@ -112,9 +111,8 @@ router.post('/token', async (req, res, next) => {
 
       console.log(`[Vivox] Room membership verified for user: ${formattedUserId} in room: ${formattedRoomId}`);
 
-      // Determine trusted username from room player record
-      const trustedUserName = player.name || String(userName || '').trim();
-      const vivoxUserUri = getVivoxUserUri(trustedUserName);
+      // Use authoritative userId for Vivox user identity
+      const vivoxUserUri = getVivoxUserUri(player.userId);
       const vivoxChannelUri = room.vivoxChannelUri || getVivoxChannelUri(formattedRoomId);
 
       let token;

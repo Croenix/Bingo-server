@@ -34,7 +34,7 @@ function registerRoomHandlers(io, socket) {
       const roomIsPublic = isPublic !== undefined ? Boolean(isPublic) : (trimPassword.length === 0);
 
       const vivoxChannelUri = getVivoxChannelUri(finalRoomId);
-      const vivoxUserUri = getVivoxUserUri(userName);
+      const vivoxUserUri = getVivoxUserUri(String(userId));
       const vivoxToken = generateVivoxToken({
         userUri: vivoxUserUri,
         action: 'join',
@@ -131,7 +131,7 @@ function registerRoomHandlers(io, socket) {
       socket.join(formattedRoomId);
 
       const vivoxChannelUri = room.vivoxChannelUri || getVivoxChannelUri(formattedRoomId);
-      const vivoxUserUri = getVivoxUserUri(userName);
+      const vivoxUserUri = getVivoxUserUri(String(userId));
       const vivoxToken = generateVivoxToken({
         userUri: vivoxUserUri,
         action: 'join',

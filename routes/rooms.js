@@ -71,7 +71,7 @@ router.post('/', async (req, res, next) => {
 
     await room.save();
 
-    const vivoxUserUri = getVivoxUserUri(trustedCreatorName);
+    const vivoxUserUri = getVivoxUserUri(String(creatorId));
     const vivoxToken = generateVivoxToken({
       userUri: vivoxUserUri,
       action: 'join',
@@ -186,7 +186,7 @@ router.post('/:roomId/join', async (req, res, next) => {
     await room.save();
 
     const vivoxChannelUri = room.vivoxChannelUri || getVivoxChannelUri(roomId);
-    const vivoxUserUri = getVivoxUserUri(trustedPlayerName);
+    const vivoxUserUri = getVivoxUserUri(String(userId));
     const vivoxToken = generateVivoxToken({
       userUri: vivoxUserUri,
       action: 'join',
@@ -264,11 +264,8 @@ router.post('/:roomId/vivox-token', async (req, res, next) => {
 
     console.log(`[Vivox] Membership verified for user: ${userId} in room ${roomId}`);
 
-    // Prevent player impersonation by trusting the server-side room player name
-    const trustedUserName = player.name || String(userName).trim();
-
     const vivoxChannelUri = room.vivoxChannelUri || getVivoxChannelUri(roomId);
-    const vivoxUserUri = getVivoxUserUri(trustedUserName);
+    const vivoxUserUri = getVivoxUserUri(player.userId);
 
     let token;
     try {
