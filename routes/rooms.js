@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Room = require('../models/Room');
+const User = require('../models/User');
 const { getVivoxUserUri, getVivoxChannelUri, generateVivoxToken } = require('../utils/vivox');
 
 /**
@@ -24,6 +25,10 @@ router.post('/', async (req, res, next) => {
     if (!creatorId || !creatorName) {
       return res.status(400).json({ error: 'creatorId and creatorName are required' });
     }
+
+    // Retrieve registered user profile if available to prevent name spoofing
+    const userProfile = await User.findOne({ userId: String(creatorId).trim() });
+    const trustedCreatorName = userProfile ? userProfile.name : String(creatorName).trim();
 
     let finalRoomId = String(customRoomId || inputRoomId || '').toUpperCase().trim();
 
@@ -49,14 +54,14 @@ router.post('/', async (req, res, next) => {
       password: trimPassword,
       isPublic: roomIsPublic,
       creatorId: String(creatorId),
-      creatorName: String(creatorName),
+      creatorName: trustedCreatorName,
       capacity: maxCap,
       status: 'waiting',
       vivoxChannelUri,
       players: [
         {
           userId: String(creatorId),
-          name: String(creatorName),
+          name: trustedCreatorName,
           isCreator: true,
           isReady: true,
           joinedAt: new Date()
@@ -66,7 +71,7 @@ router.post('/', async (req, res, next) => {
 
     await room.save();
 
-    const vivoxUserUri = getVivoxUserUri(creatorName);
+    const vivoxUserUri = getVivoxUserUri(trustedCreatorName);
     const vivoxToken = generateVivoxToken({
       userUri: vivoxUserUri,
       action: 'join',
@@ -143,6 +148,10 @@ router.post('/:roomId/join', async (req, res, next) => {
       return res.status(400).json({ error: 'userId and userName are required' });
     }
 
+    // Retrieve registered user profile if available to prevent name spoofing
+    const userProfile = await User.findOne({ userId: String(userId).trim() });
+    const trustedPlayerName = userProfile ? userProfile.name : String(userName).trim();
+
     const room = await Room.findOne({ roomId });
     if (!room) {
       return res.status(404).json({ error: 'Room not found' });
@@ -163,11 +172,11 @@ router.post('/:roomId/join', async (req, res, next) => {
     }
 
     if (existingIndex !== -1) {
-      room.players[existingIndex].name = String(userName);
+      room.players[existingIndex].name = trustedPlayerName;
     } else {
       room.players.push({
         userId: String(userId),
-        name: String(userName),
+        name: trustedPlayerName,
         isCreator: String(userId) === String(room.creatorId),
         isReady: false,
         joinedAt: new Date()
@@ -177,7 +186,7 @@ router.post('/:roomId/join', async (req, res, next) => {
     await room.save();
 
     const vivoxChannelUri = room.vivoxChannelUri || getVivoxChannelUri(roomId);
-    const vivoxUserUri = getVivoxUserUri(userName);
+    const vivoxUserUri = getVivoxUserUri(trustedPlayerName);
     const vivoxToken = generateVivoxToken({
       userUri: vivoxUserUri,
       action: 'join',
@@ -187,7 +196,7 @@ router.post('/:roomId/join', async (req, res, next) => {
     const io = req.app.get('io');
     if (io) {
       io.to(roomId).emit('player_joined', {
-        player: { userId: String(userId), name: String(userName) },
+        player: { userId: String(userId), name: trustedPlayerName },
         players: room.players,
         playersCount: room.players.length,
         capacity: room.capacity
@@ -211,36 +220,81 @@ router.post('/:roomId/join', async (req, res, next) => {
 
 /**
  * POST /api/rooms/:roomId/vivox-token
- * Generate Vivox token for player voice chat authentication.
- * Body: { userName, action }
+ * Securely generate Vivox token for authenticated room members only.
+ * Body: { userId, userName }
  */
 router.post('/:roomId/vivox-token', async (req, res, next) => {
   try {
-    const roomId = req.params.roomId.toUpperCase().trim();
-    const { userName, action = 'join' } = req.body;
+    const rawRoomId = req.params.roomId;
+    if (!rawRoomId || String(rawRoomId).trim() === '') {
+      return res.status(400).json({ ok: false, message: 'roomId is required' });
+    }
 
-    if (!userName) {
-      return res.status(400).json({ error: 'userName is required' });
+    const roomId = String(rawRoomId).toUpperCase().trim();
+    const { userId, userName } = req.body || {};
+
+    console.log(`[Vivox] Token request for room: ${roomId}, user: ${userId}`);
+
+    if (!userId || String(userId).trim() === '') {
+      console.log(`[Vivox] Unauthorized token request: missing userId`);
+      return res.status(400).json({ ok: false, message: 'userId is required' });
+    }
+
+    if (!userName || String(userName).trim() === '') {
+      console.log(`[Vivox] Unauthorized token request: missing userName`);
+      return res.status(400).json({ ok: false, message: 'userName is required' });
     }
 
     const room = await Room.findOne({ roomId });
     if (!room) {
-      return res.status(404).json({ error: 'Room not found' });
+      console.log(`[Vivox] Token request failed: Room ${roomId} not found`);
+      return res.status(404).json({ ok: false, message: 'Room not found' });
     }
 
+    if (room.status === 'finished') {
+      console.log(`[Vivox] Token request rejected: Room ${roomId} is finished`);
+      return res.status(403).json({ ok: false, message: 'Room is already finished' });
+    }
+
+    const player = room.players && room.players.find(p => String(p.userId) === String(userId).trim());
+    if (!player) {
+      console.log(`[Vivox] Unauthorized token request: User ${userId} is not a member of room ${roomId}`);
+      return res.status(403).json({ ok: false, message: 'User is not a member of this room' });
+    }
+
+    console.log(`[Vivox] Membership verified for user: ${userId} in room ${roomId}`);
+
+    // Prevent player impersonation by trusting the server-side room player name
+    const trustedUserName = player.name || String(userName).trim();
+
     const vivoxChannelUri = room.vivoxChannelUri || getVivoxChannelUri(roomId);
-    const vivoxUserUri = getVivoxUserUri(userName);
-    const token = generateVivoxToken({
-      userUri: vivoxUserUri,
-      action,
-      targetUri: vivoxChannelUri
-    });
+    const vivoxUserUri = getVivoxUserUri(trustedUserName);
+
+    let token;
+    try {
+      token = generateVivoxToken({
+        userUri: vivoxUserUri,
+        action: 'join',
+        targetUri: vivoxChannelUri
+      });
+    } catch (err) {
+      console.error(`[Vivox] Error generating token:`, err.message);
+      return res.status(500).json({ ok: false, message: 'Vivox service configuration error' });
+    }
+
+    console.log(`[Vivox] Token generated successfully`);
 
     res.json({
       ok: true,
+      message: 'Vivox token generated',
       token,
       channelUri: vivoxChannelUri,
-      userUri: vivoxUserUri
+      userUri: vivoxUserUri,
+      vivox: {
+        token,
+        channelUri: vivoxChannelUri,
+        userUri: vivoxUserUri
+      }
     });
   } catch (err) {
     next(err);

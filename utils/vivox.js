@@ -16,8 +16,8 @@ function base64url(input) {
  * Format: sip:.{issuer}.{username}.@{domain}
  */
 function getVivoxUserUri(username) {
-  const issuer = process.env.VIVOX_ISSUER || 'bingo1234-vi0';
-  const domain = process.env.VIVOX_DOMAIN || 'v3.vivox.com';
+  const issuer = process.env.VIVOX_ISSUER || '20067-bingo-52162';
+  const domain = process.env.VIVOX_DOMAIN || 'mtu1xp.vivox.com';
   const safeUsername = String(username).replace(/[^a-zA-Z0-9_\-\.]/g, '');
   return `sip:.${issuer}.${safeUsername}.@${domain}`;
 }
@@ -27,8 +27,8 @@ function getVivoxUserUri(username) {
  * Format: sip:confctl-g-{issuer}.{channelName}@{domain}
  */
 function getVivoxChannelUri(channelName) {
-  const issuer = process.env.VIVOX_ISSUER || 'bingo1234-vi0';
-  const domain = process.env.VIVOX_DOMAIN || 'v3.vivox.com';
+  const issuer = process.env.VIVOX_ISSUER || '20067-bingo-52162';
+  const domain = process.env.VIVOX_DOMAIN || 'mtu1xp.vivox.com';
   const safeChannel = String(channelName).replace(/[^a-zA-Z0-9_\-\.]/g, '');
   return `sip:confctl-g-${issuer}.${safeChannel}@${domain}`;
 }
@@ -45,8 +45,14 @@ let vxiCounter = 100;
  * @returns {string} Signed Vivox Access Token
  */
 function generateVivoxToken({ userUri, action = 'join', targetUri, expirationSeconds = 90 }) {
-  const issuer = process.env.VIVOX_ISSUER || 'bingo1234-vi0';
-  const secretKey = process.env.VIVOX_SECRET_KEY || 'bingo_vivox_secret_key_2026';
+  const issuer = process.env.VIVOX_ISSUER || '20067-bingo-52162';
+  const secretKey = process.env.VIVOX_SECRET_KEY;
+
+  if (!secretKey) {
+    throw new Error(
+      'Vivox service configuration error: VIVOX_SECRET_KEY is missing'
+    );
+  }
 
   const nowSec = Math.floor(Date.now() / 1000);
   const expSec = nowSec + expirationSeconds;

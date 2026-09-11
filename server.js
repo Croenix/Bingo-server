@@ -66,6 +66,8 @@ io.on('connection', (socket) => {
   registerRoomHandlers(io, socket);
 });
 
+const PORT = Number(process.env.PORT || 3000);
+
 async function start() {
   if (!process.env.JWT_SECRET) console.warn('Warning: JWT_SECRET is missing in .env');
 
@@ -85,7 +87,6 @@ async function start() {
   }
 }
 
-const PORT = Number(process.env.PORT || 3000);
 start();
 
 module.exports = { app, server, io };
