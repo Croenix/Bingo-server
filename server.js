@@ -12,6 +12,7 @@ const userRoutes = require('./routes/users');
 const adminRoutes = require('./routes/admin');
 const challengeRoutes = require('./routes/challenges');
 const roomRoutes = require('./routes/rooms');
+const vivoxRoutes = require('./routes/vivox');
 const registerRoomHandlers = require('./sockets/roomHandler');
 const migrateLegacyUsers = require('./utils/migrateUsers');
 
@@ -49,6 +50,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/challenges', challengeRoutes);
 app.use('/api/rooms', roomRoutes);
+app.use('/api/vivox', vivoxRoutes);
 
 app.get(['/', '/admin'], (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin.html'));
